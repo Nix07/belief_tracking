@@ -20,7 +20,6 @@ project_root = os.path.dirname(
 sys.path.append(project_root)
 
 from src.dataset import Dataset, Sample
-from . import env_utils
 
 random.seed(10)
 
@@ -327,6 +326,54 @@ def get_state_tracing_exps(
     # For state tracing, the target is the first state from corrupt config (different from other tracers)
     for idx, sample in enumerate(samples):
         sample["target"] = " " + corrupt_configs[idx].states[0]
+
+    return samples
+
+
+def get_memorization_exps(
+    model, story_templates, all_characters, all_containers, all_states, num_samples
+):
+    """
+    Generate samples for memorization experiments.
+    """
+    characters_list, containers_list, states_list = _create_base_configurations(
+        all_characters, all_containers, all_states, num_samples
+    )
+
+    samples, configs = [], []
+    for idx in range(num_samples):
+        configs.append(
+            Sample(
+                template_idx=2,
+                characters=characters_list[idx],
+                containers=containers_list[idx],
+                states=states_list[idx],
+            )
+        )
+
+    clean_dataset = Dataset(configs)
+    for idx in range(num_samples):
+        clean_item = clean_dataset.__getitem__(idx)
+
+        clean_prompt = clean_item["prompt"]
+        clean_prompt_len = len(model.tokenizer.encode(clean_prompt))
+        clean_target = clean_item["target"]
+
+        # Randomly select clean_prompt_len tokens from vocabulary to form corrupt prompt
+        corrupt_prompt = []
+        corrupt_prompt = [
+            random.randint(0, model.config.vocab_size) for _ in range(clean_prompt_len)
+        ]
+        corrupt_prompt = model.tokenizer.decode(corrupt_prompt)
+
+        samples.append(
+            {
+                "clean_prompt": clean_prompt,
+                "clean_ans": clean_target,
+                "corrupt_prompt": corrupt_prompt,
+                "target": clean_target,
+            }
+        )
 
     return samples
 
