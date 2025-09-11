@@ -360,11 +360,16 @@ def get_memorization_exps(
         clean_target = clean_item["target"]
 
         # Randomly select clean_prompt_len tokens from vocabulary to form corrupt prompt
-        corrupt_prompt = []
-        corrupt_prompt = [
+        corrupt_prompt_list = []
+        corrupt_prompt_list = [
             random.randint(0, model.config.vocab_size) for _ in range(clean_prompt_len)
         ]
-        corrupt_prompt = model.tokenizer.decode(corrupt_prompt)
+        corrupt_prompt = model.tokenizer.decode(corrupt_prompt_list)
+        corrupt_prompt_len = len(model.tokenizer.encode(corrupt_prompt))
+        while corrupt_prompt_len != clean_prompt_len:
+            corrupt_prompt_list = corrupt_prompt_list[:-1]
+            corrupt_prompt = model.tokenizer.decode(corrupt_prompt_list)
+            corrupt_prompt_len = len(model.tokenizer.encode(corrupt_prompt))
 
         samples.append(
             {
