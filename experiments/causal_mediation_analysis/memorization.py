@@ -39,7 +39,6 @@ def initialize_model():
     model = LanguageModel(
         "meta-llama/Meta-Llama-3-70B-Instruct",
         device_map="auto",
-        load_in_8bit=True,
         dtype=torch.float16,
         dispatch=True,
     )
@@ -97,7 +96,7 @@ def run_iia_analysis(model, dataloader, prompt_len):
     with torch.no_grad():
         for token_idx in range(prompt_len - 1, 129, -1):
             for layer_idx in tqdm(
-                range(0, model.config.num_hidden_layers, 10),
+                range(0, model.config.num_hidden_layers, 1),
                 desc="Layers for token: {}".format(token_idx),
             ):
                 correct, total = 0, 0
@@ -199,9 +198,9 @@ def main():
 
     # Create dataset and dataloader
     print("Creating dataset...")
-    num_samples = 5
-    batch_size = 5
-    dataset, dataloader, prompt_len = create_dataset_and_dataloader(
+    num_samples = 50
+    batch_size = 50
+    _, dataloader, prompt_len = create_dataset_and_dataloader(
         model,
         story_templates,
         all_characters,
@@ -211,6 +210,7 @@ def main():
         batch_size,
     )
 
+    print(f"Dataset size: {len(dataloader.dataset)}")
     print(f"Dataset created with prompt length: {prompt_len}")
 
     # Run IIA analysis

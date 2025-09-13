@@ -340,26 +340,33 @@ def get_memorization_exps(
         all_characters, all_containers, all_states, num_samples
     )
 
-    samples, configs = [], []
-    for idx in range(num_samples):
-        configs.append(
-            Sample(
-                template_idx=2,
-                characters=characters_list[idx],
-                containers=containers_list[idx],
-                states=states_list[idx],
-            )
+    samples = []
+
+    while len(samples) < num_samples:
+        idx = len(samples)
+        config = Sample(
+            template_idx=2,
+            characters=characters_list[idx],
+            containers=containers_list[idx],
+            states=states_list[idx],
         )
 
-    clean_dataset = Dataset(configs)
-    for idx in range(num_samples):
-        clean_item = clean_dataset.__getitem__(idx)
-
+        clean_item = Dataset([config]).__getitem__(0)
         clean_prompt = clean_item["prompt"]
-        clean_prompt_len = len(model.tokenizer.encode(clean_prompt))
         clean_target = clean_item["target"]
+        clean_prompt_len = len(model.tokenizer.encode(clean_prompt))
 
-        # Randomly select clean_prompt_len tokens from vocabulary to form corrupt prompt
+        with torch.no_grad():
+            with model.trace(clean_prompt):
+                pred = model.lm_head.output[0, -1].argmax(dim=-1).save()
+
+        # If prediction on clean prompt is incorrect, skip
+        pred_token = model.tokenizer.decode([pred]).lower().strip()
+        clean_target_token = clean_target.lower().strip()
+        if pred_token != clean_target_token:
+            continue
+
+        # Form corrupt prompt of the same length as clean prompt
         corrupt_prompt_list = []
         corrupt_prompt_list = [
             random.randint(0, model.config.vocab_size) for _ in range(clean_prompt_len)
@@ -367,7 +374,12 @@ def get_memorization_exps(
         corrupt_prompt = model.tokenizer.decode(corrupt_prompt_list)
         corrupt_prompt_len = len(model.tokenizer.encode(corrupt_prompt))
         while corrupt_prompt_len != clean_prompt_len:
-            corrupt_prompt_list = corrupt_prompt_list[:-1]
+            if corrupt_prompt_len > clean_prompt_len:
+                corrupt_prompt_list = corrupt_prompt_list[:-1]
+            elif corrupt_prompt_len < clean_prompt_len:
+                corrupt_prompt_list = corrupt_prompt_list + [
+                    random.randint(0, model.config.vocab_size)
+                ]
             corrupt_prompt = model.tokenizer.decode(corrupt_prompt_list)
             corrupt_prompt_len = len(model.tokenizer.encode(corrupt_prompt))
 
@@ -379,6 +391,9 @@ def get_memorization_exps(
                 "target": clean_target,
             }
         )
+
+        if len(samples) % 10 == 0:
+            print(f"Generated {len(samples)} samples")
 
     return samples
 
