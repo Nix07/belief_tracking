@@ -18,8 +18,8 @@ cd belief_tracking
 
 2. Set up the environment:
 ```bash
-conda env create -f environment.yml
-conda activate belief
+uv sync
+source .venv/bin/activate
 ```
 
 3. Configure `env.yml` with following environment variables:
