@@ -82,16 +82,22 @@ def create_dataset_and_dataloader(
     return dataset, dataloader, prompt_len
 
 
-def run_iia_analysis(model, dataloader, prompt_len):
+def run_iia_analysis(model, dataloader, prompt_len) -> dict:
     """
-    Run Intervention-Induced Accuracy (IIA) analysis.
+    Run noising intervention analysis to identify causally relevant tokens.
 
     This function performs causal mediation analysis by:
     1. Corrupting specific tokens in the input
     2. Measuring the impact on model predictions across different layers
     3. Computing accuracy scores for each token-layer combination
+
+    Returns:
+        dict: IIA results
     """
     iia = defaultdict(dict)
+    intervened_logits = torch.zeros(
+        prompt_len, model.config.num_hidden_layers, len(dataloader.dataset)
+    )
 
     with torch.no_grad():
         for token_idx in range(prompt_len - 1, 129, -1):
@@ -108,25 +114,33 @@ def run_iia_analysis(model, dataloader, prompt_len):
                     batch_size = len(clean_ans)
 
                     # Get corrupted layer output
-                    with model.trace(corrupt_prompt):
-                        corrupt_layer_out = (
-                            model.model.layers[layer_idx]
-                            .output[:, token_idx]
-                            .clone()
-                            .save()
-                        )
+                    with model.trace() as tracer:
+                        barrier = tracer.barrier(2)
 
-                    # Apply intervention and get prediction
-                    with model.trace(clean_prompt) as tracer:
-                        model.model.layers[layer_idx].output[:, token_idx] = (
-                            corrupt_layer_out
-                        )
-                        pred = model.lm_head.output[:, -1].argmax(dim=-1).save()
+                        with tracer.invoke(corrupt_prompt):
+                            corrupt_layer_out = (
+                                model.model.layers[layer_idx]
+                                .output[:, token_idx]
+                                .clone()
+                            )
+                            barrier()
+
+                        # Apply intervention and get prediction
+                        with tracer.invoke(clean_prompt):
+                            barrier()
+                            model.model.layers[layer_idx].output[:, token_idx] = (
+                                corrupt_layer_out
+                            )
+                            logits = model.lm_head.output[:, -1].save()
 
                     # Evaluate predictions
                     for i in range(batch_size):
-                        pred_token = model.tokenizer.decode([pred[i]]).lower().strip()
+                        pred = logits[i].argmax(dim=-1)
+                        pred_token = model.tokenizer.decode([pred]).lower().strip()
                         clean_answer_token = clean_ans[i].lower().strip()
+                        intervened_logits[token_idx][layer_idx][bi * batch_size + i] = (
+                            logits[i, pred].save()
+                        )
 
                         if pred_token != clean_answer_token:
                             correct += 1
@@ -140,6 +154,9 @@ def run_iia_analysis(model, dataloader, prompt_len):
                 # Save intermediate results
                 with open("iia.json", "w") as f:
                     json.dump(iia, f, indent=4)
+
+                # Save intervened logits as a tensor to the disk
+                torch.save(intervened_logits, "intervened_logits.pt")
 
     return iia
 
