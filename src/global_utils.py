@@ -1,19 +1,27 @@
-"""Tools for reading and controlling the runtime environment."""
-
 import logging
 import os
 from typing import Union
 
 import yaml
 
-ENV_DATA_DIR = "RELATIONS_DATA_DIR"
-ENV_MODELS_DIR = "RELATIONS_MODELS_DIR"
-ENV_RESULTS_DIR = "RELATIONS_RESULTS_DIR"
+# Configure logger
+logger = logging.getLogger("mind")
+logger.setLevel(logging.INFO)
 
-logger = logging.getLogger(__name__)
+# Create console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Create formatter
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+console_handler.setFormatter(formatter)
+
+# Add handler to logger
+logger.addHandler(console_handler)
+
+PROJECT_ROOT = "/".join(os.path.dirname(os.path.abspath(__file__)).split("/")[:-1])
 
 try:
-    PROJECT_ROOT = "/".join(os.path.dirname(os.path.abspath(__file__)).split("/")[:-1])
     with open(os.path.join(PROJECT_ROOT, "env.yml"), "r") as f:
         config = yaml.safe_load(f)
         DEFAULT_DATA_DIR = os.path.join(PROJECT_ROOT, config["DATA_DIR"])
