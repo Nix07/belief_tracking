@@ -65,7 +65,7 @@ The repository contains several components:
 
 3. **Scripts**: The `scripts/` directory contains utility scripts organized by experiment type:
    - `scripts/patching_scripts/`: Contains patching experiment scripts including `run_single_layer_patching_exps.py` and `run_upto_layer_patching_exps.py` for subspace interchange intervention experiments
-   - `scripts/tracing_scripts/`: Contains causal mediation analysis scripts including `cma.py` for tracing experiments
+   - `scripts/tracing_scripts/`: Contains causal mediation analysis scripts including `trace.py` for tracing experiments
 
 4. **Results**: The `results/` directory contains experiment outputs organized by experiment type, including attention knockout results, BigToM results, causal mediation analysis results, and CausalToM experiment results.
 

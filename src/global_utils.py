@@ -20,6 +20,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 PROJECT_ROOT = "/".join(os.path.dirname(os.path.abspath(__file__)).split("/")[:-1])
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 try:
     with open(os.path.join(PROJECT_ROOT, "env.yml"), "r") as f:

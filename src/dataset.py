@@ -22,7 +22,7 @@ with open(STORY_TEMPLATE_PATH, "r") as f:
 class Sample(DataClassJsonMixin):
     template_idx: int
     characters: list[str]
-    containers: list[str]
+    objects: list[str]
     states: list[str]
 
     story: str | None = None
@@ -34,7 +34,7 @@ class Sample(DataClassJsonMixin):
         # assert len(self.states) == 2 and len(self.containers) == 2 and len(self.characters) == 2
         # No Duplicates
         assert len(list(set(self.states))) == len(self.states)
-        assert len(list(set(self.containers))) == len(self.containers)
+        assert len(list(set(self.objects))) == len(self.objects)
         assert len(list(set(self.characters))) == len(self.characters)
 
         self.set_story()
@@ -53,11 +53,11 @@ class Sample(DataClassJsonMixin):
         # containers
         self.story = self.story.replace(
             STORY_TEMPLATES["placeholders"]["entity"]["container"][0],
-            self.containers[0],
+            self.objects[0],
         )
         self.story = self.story.replace(
             STORY_TEMPLATES["placeholders"]["entity"]["container"][1],
-            self.containers[1],
+            self.objects[1],
         )
 
         # states
@@ -74,17 +74,17 @@ class Sample(DataClassJsonMixin):
 
         # true state
         self.world_state = {
-            self.containers[0]: self.states[0],
-            self.containers[1]: self.states[1],
+            self.objects[0]: self.states[0],
+            self.objects[1]: self.states[1],
         }
         self.character_belief = [self.world_state.copy(), self.world_state.copy()]
 
         # set the character beliefs
         if self.template_idx in [0, 2, 3]:
-            self.character_belief[0][self.containers[1]] = "unknown"
-            self.character_belief[1][self.containers[0]] = "unknown"
+            self.character_belief[0][self.objects[1]] = "unknown"
+            self.character_belief[1][self.objects[0]] = "unknown"
         elif self.template_idx == 1:
-            self.character_belief[1][self.containers[0]] = "unknown"
+            self.character_belief[1][self.objects[0]] = "unknown"
 
         # set the common entity names
         self.set_entity_names()
@@ -101,9 +101,7 @@ class Sample(DataClassJsonMixin):
 @dataclass(frozen=False)
 class Dataset(DataClassJsonMixin):
     samples: list[Sample]
-    instruction: str = (
-        "1. Track the belief of each character as described in the story. 2. A character's belief is formed only when they perform an action themselves or can observe the action taking place. 3. A character does not have any beliefs about the container and its contents which they cannot observe. 4. To answer the question, predict only what is inside the queried container, strictly based on the belief of the character, mentioned in the question. 5. If the queried character has no belief about the container in question, then predict 'unknown'. 6. Do not predict container or character as the final output."
-    )
+    instruction: str = "1. Track the belief of each character as described in the story. 2. A character's belief is formed only when they perform an action themselves or can observe the action taking place. 3. A character does not have any beliefs about the container and its contents which they cannot observe. 4. To answer the question, predict only what is inside the queried container, strictly based on the belief of the character, mentioned in the question. 5. If the queried character has no belief about the container in question, then predict 'unknown'. 6. Do not predict container or character as the final output."
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -119,13 +117,17 @@ class Dataset(DataClassJsonMixin):
         prompt += f"Story: {self.samples[idx].story.strip()}\n"
 
         sample = self.samples[idx]
-        
-        set_character = random.choice([0, 1]) if set_character is None else set_character
+
+        set_character = (
+            random.choice([0, 1]) if set_character is None else set_character
+        )
         q_actor = sample.characters[set_character]
         belief_states = sample.character_belief[set_character]
-        
-        set_container = random.choice([0, 1]) if set_container is None else set_container
-        q_container = sample.containers[set_container]
+
+        set_container = (
+            random.choice([0, 1]) if set_container is None else set_container
+        )
+        q_container = sample.objects[set_container]
 
         if q_container in belief_states:
             ans = belief_states[q_container]
@@ -145,7 +147,7 @@ class Dataset(DataClassJsonMixin):
         prompt += "Answer:"
         return {
             "characters": sample.characters,
-            "objects": sample.containers,
+            "objects": sample.objects,
             "states": sample.states,
             "story": sample.story,
             "question": question,

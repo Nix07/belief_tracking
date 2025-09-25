@@ -75,7 +75,7 @@ def get_visibility_lookback_data(
         no_vis_sample = Sample(
             template_idx=0,
             characters=characters,
-            containers=containers,
+            objects=containers,
             states=states,
         )
 
@@ -92,7 +92,7 @@ def get_visibility_lookback_data(
         vis_sample = Sample(
             template_idx=1,
             characters=new_characters,
-            containers=new_containers,
+            objects=new_containers,
             states=new_states,
         )
 

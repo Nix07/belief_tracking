@@ -199,7 +199,7 @@ def get_character_tracing_exps(
         counterfactual_config = Sample(
             template_idx=2,
             characters=characters_list[idx],
-            containers=objects_list[idx],
+            objects=objects_list[idx],
             states=states_list[idx],
         )
         counterfactual_configs.append(counterfactual_config)
@@ -214,7 +214,7 @@ def get_character_tracing_exps(
         clean_config = Sample(
             template_idx=2,
             characters=modified_characters,
-            containers=objects_list[idx],
+            objects=objects_list[idx],
             states=states_list[idx],
         )
         clean_configs.append(clean_config)
@@ -258,7 +258,7 @@ def get_object_tracing_exps(
         counterfactual_config = Sample(
             template_idx=2,
             characters=characters_list[idx],
-            containers=objects_list[idx],
+            objects=objects_list[idx],
             states=states_list[idx],
         )
         counterfactual_configs.append(counterfactual_config)
@@ -273,7 +273,7 @@ def get_object_tracing_exps(
         clean_config = Sample(
             template_idx=2,
             characters=characters_list[idx],
-            containers=modified_objects,
+            objects=modified_objects,
             states=states_list[idx],
         )
         clean_configs.append(clean_config)
@@ -325,7 +325,7 @@ def get_state_tracing_exps(
         counterfactual_config = Sample(
             template_idx=2,
             characters=characters_list[idx],
-            containers=objects_list[idx],
+            objects=objects_list[idx],
             states=states_list[idx],
         )
         counterfactual_configs.append(counterfactual_config)
@@ -340,7 +340,7 @@ def get_state_tracing_exps(
         clean_config = Sample(
             template_idx=2,
             characters=characters_list[idx],
-            containers=objects_list[idx],
+            objects=objects_list[idx],
             states=modified_states,
         )
         clean_configs.append(clean_config)
