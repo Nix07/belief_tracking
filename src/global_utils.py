@@ -42,9 +42,6 @@ Other defaults are set to:
 
 def load_env_var(var: str) -> Union[str, None]:
     try:
-        PROJECT_ROOT = "/".join(
-            os.path.dirname(os.path.abspath(__file__)).split("/")[:-1]
-        )
         with open(os.path.join(PROJECT_ROOT, "env.yml"), "r") as f:
             config = yaml.safe_load(f)
     except FileNotFoundError:
