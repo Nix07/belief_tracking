@@ -21,10 +21,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from src import env_utils
+from src import global_utils
 
-os.environ["NDIF_KEY"] = env_utils.load_env_var("NDIF_KEY")
-os.environ["HF_TOKEN"] = env_utils.load_env_var("HF_WRITE")
+os.environ["NDIF_KEY"] = global_utils.load_env_var("NDIF_KEY")
+os.environ["HF_TOKEN"] = global_utils.load_env_var("HF_WRITE")
 
 query_object_indices = [-5, -4]
 query_character_indices = [-8, -7]
@@ -705,7 +705,7 @@ def main(
         lm = LanguageModel(
             "meta-llama/Meta-Llama-3-70B-Instruct",
             device_map="auto",
-            torch_dtype=torch.float16,
+            dtype=torch.float16,
             dispatch=True,
         )
 

@@ -17,8 +17,9 @@ from nnsight import LanguageModel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from experiments.bigToM.utils import (
+curr_file_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(curr_file_dir)))
+from notebooks.bigToM.utils import (
     get_answer_lookback_payload_exps,
     get_answer_lookback_pointer_exps,
     get_binding_lookback_pointer_exps,
@@ -27,7 +28,17 @@ from experiments.bigToM.utils import (
     get_visibility_lookback_exps,
     get_visitibility_sent_start_idx,
 )
-from src import env_utils
+from notebooks.causalToM_novis.utils import (
+    get_answer_lookback_payload,
+    get_character_oi_exps,
+    get_object_oi_exps,
+    get_query_charac_oi,
+    get_query_object_oi,
+    get_reversed_sent_diff_state_counterfacts,
+    get_reversed_sentence_counterfacts,
+)
+from notebooks.causalToM_vis.utils import get_visibility_lookback_data
+from src import global_utils
 
 
 def free_gpu_cache():
@@ -134,32 +145,21 @@ def send_request_to_ndif(nnsight_request: Callable, timeout=72000, n_try=5) -> A
     )
 
 
-from experiments.causalToM_novis.utils import (
-    get_answer_lookback_payload,
-    get_answer_lookback_pointer,
-    get_binding_addr_and_payload,
-    get_character_oi_exps,
-    get_object_oi_exps,
-    get_query_charac_oi,
-    get_query_object_oi,
-)
-from experiments.causalToM_vis.utils import get_visibility_lookback_data
-
 exp_to_ds_func_map = {
-    "answer_lookback-pointer": get_answer_lookback_pointer,
+    "answer_lookback-pointer": get_reversed_sent_diff_state_counterfacts,
     "answer_lookback-payload": get_answer_lookback_payload,
     "binding_lookback-pointer_object": get_query_object_oi,
     "binding_lookback-pointer_character": get_query_charac_oi,
     "binding_lookback-object_oi": get_object_oi_exps,
     "binding_lookback-character_oi": get_character_oi_exps,
-    "binding_lookback-address_and_payload": get_binding_addr_and_payload,
+    "binding_lookback-address_and_payload": get_reversed_sentence_counterfacts,
     "visibility_lookback-payload": get_visibility_lookback_data,
     "visibility_lookback-source": get_visibility_lookback_data,
     "visibility_lookback-address_and_payload": get_visibility_lookback_data,
     "vis_2nd_to_1st_and_ques": get_visibility_lookback_data,
-    "binding_lookback-source_1": get_answer_lookback_pointer,
-    "binding_lookback-source_2": get_answer_lookback_pointer,
-    "binding_lookback-pointer_charac_and_object": get_answer_lookback_pointer,
+    "binding_lookback-source_1": get_reversed_sent_diff_state_counterfacts,
+    "binding_lookback-source_2": get_reversed_sent_diff_state_counterfacts,
+    "binding_lookback-pointer_charac_and_object": get_reversed_sent_diff_state_counterfacts,
 }
 
 bigtom_exp_to_ds_func_map = {
@@ -354,9 +354,11 @@ def check_lm_on_sample(lm, sample, remote=False):
     lm.tokenizer.padding_side = "left"
     # lm.model.eval()
 
-    prompts = [sample["corrupt_prompt"], sample["clean_prompt"]]
+    prompts = [sample["counterfactual_prompt"], sample["clean_prompt"]]
     answers = [
-        sample["corrupt_ans"] if "corrupt_ans" in sample else sample["corrupt_target"],
+        sample["counterfactual_ans"]
+        if "counterfactual_ans" in sample
+        else sample["counterfactual_target"],
         sample["clean_ans"] if "clean_ans" in sample else sample["clean_target"],
     ]
     inputs = lm.tokenizer(prompts, return_tensors="pt", padding=True)
@@ -365,7 +367,7 @@ def check_lm_on_sample(lm, sample, remote=False):
 
     def nnsight_request():
         # print(inputs)
-        with lm.trace(inputs, remote=remote) as tracer:
+        with lm.trace(inputs, remote=remote):
             logits = lm.lm_head.output[:, -1]
             predicted = torch.argmax(logits, dim=-1).save()
         return predicted
@@ -418,7 +420,7 @@ def prepare_dataset(
     all_characters = json.load(
         open(
             os.path.join(
-                env_utils.DEFAULT_DATA_DIR, "synthetic_entities", "characters.json"
+                global_utils.DEFAULT_DATA_DIR, "synthetic_entities", "characters.json"
             ),
             "r",
         )
@@ -426,7 +428,7 @@ def prepare_dataset(
     all_objects = json.load(
         open(
             os.path.join(
-                env_utils.DEFAULT_DATA_DIR, "synthetic_entities", "bottles.json"
+                global_utils.DEFAULT_DATA_DIR, "synthetic_entities", "bottles.json"
             ),
             "r",
         )
@@ -434,7 +436,7 @@ def prepare_dataset(
     all_states = json.load(
         open(
             os.path.join(
-                env_utils.DEFAULT_DATA_DIR, "synthetic_entities", "drinks.json"
+                global_utils.DEFAULT_DATA_DIR, "synthetic_entities", "drinks.json"
             ),
             "r",
         )
@@ -477,7 +479,7 @@ def prepare_bigtom_dataset(
 ):
     df_false = pd.read_csv(
         os.path.join(
-            env_utils.DEFAULT_DATA_DIR,
+            global_utils.DEFAULT_DATA_DIR,
             "bigtom",
             "0_forward_belief_false_belief",
             "stories.csv",
@@ -487,7 +489,7 @@ def prepare_bigtom_dataset(
 
     df_true = pd.read_csv(
         os.path.join(
-            env_utils.DEFAULT_DATA_DIR,
+            global_utils.DEFAULT_DATA_DIR,
             "bigtom",
             "0_forward_belief_true_belief",
             "stories.csv",
