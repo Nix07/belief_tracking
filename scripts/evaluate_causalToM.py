@@ -233,7 +233,10 @@ def main():
     # Save results
     if args.save_results:
         # Include model name in the save path
-        args.save_results = os.path.join(args.save_results, args.model.split("/")[-1] + ".json")
+        if not args.visibility:
+            args.save_results = os.path.join(args.save_results, args.model.split("/")[-1] + ".json")
+        else:
+            args.save_results = os.path.join(args.save_results, args.model.split("/")[-1] + "_vis.json")
         os.makedirs(os.path.dirname(args.save_results) or ".", exist_ok=True)
         with open(args.save_results, "w") as f:
             json.dump(results, f, indent=2)
