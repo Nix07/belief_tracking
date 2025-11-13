@@ -78,7 +78,7 @@ def validate(
         targets = (
             batch["target"] if "target" in batch else batch["counterfactual_target"]
         )
-        target_tokens = lm.tokenizer(targets, return_tensors="pt").input_ids[:, -1]
+        target_tokens = lm.tokenizer(targets, return_tensors="pt", padding=True, padding_side="right").input_ids[:, 1:]
         batch_size = target_tokens.size(0)
         alt_acts, org_acts_state = defaultdict(dict), defaultdict(dict)
 
@@ -145,11 +145,11 @@ def validate(
             with lm.trace(remote=remote) as tracer:
                 with tracer.invoke(alt_prompts):
                     for t in intervention_positions["cache"]:
-                        alt_acts[t] = lm.model.layers[layer_idx].output[0][:, t].clone()
+                        alt_acts[t] = lm.model.layers[layer_idx].output[:, t].clone()
 
                 with tracer.invoke(org_prompts):
                     for t in intervention_positions["patch"]:
-                        curr_output = lm.model.layers[layer_idx].output[0][:, t].clone()
+                        curr_output = lm.model.layers[layer_idx].output[:, t].clone()
                         if projection is not None:
                             if isinstance(projection, dict):
                                 if t in query_object_indices:
@@ -171,7 +171,7 @@ def validate(
                         else:
                             patch = alt_acts[patch_to_cache_map[t]]
 
-                        lm.model.layers[layer_idx].output[0][:, t] = patch
+                        lm.model.layers[layer_idx].output[:, t] = patch
 
                     logits = lm.lm_head.output[:, -1]
                     pred = torch.argmax(logits, dim=-1).save()
@@ -624,6 +624,16 @@ experiment_layers = {
         "visibility_lookback-payload": list(range(40, 80, 2)),
         "visibility_lookback-address_and_pointer": list(range(0, 80, 2)),
     },
+    "Qwen/Qwen2.5-7B-Instruct": {
+        "answer_lookback-payload": list(range(0, 28)),
+        "answer_lookback-pointer": list(range(0, 28)),
+        "binding_lookback-pointer_object": list(range(0, 28)),
+        "binding_lookback-pointer_character": list(range(0, 28)),
+        "binding_lookback-address_and_payload": list(range(0, 28)),
+        "visibility_lookback-source": list(range(0, 28)),
+        "visibility_lookback-payload": list(range(0, 28)),
+        "visibility_lookback-address_and_pointer": list(range(0, 28)),
+    },
 }
 
 
@@ -650,7 +660,7 @@ def main(
     learning_rate: float = 0.1,  # 0.005 for BigToM
     n_epochs: int = 1,
     lamb: float = None,
-    save_path: str = "experiments/causalToM_novis/results",
+    save_path: str = "results/causalToM_novis/",
     save_outputs: bool = False,
     bigtom: bool = False,
     remote: bool = False,
@@ -712,9 +722,9 @@ def main(
         lm = LanguageModel("meta-llama/Meta-Llama-3.1-405B-Instruct")
     else:
         lm = LanguageModel(
-            "meta-llama/Meta-Llama-3-70B-Instruct",
+            model_key,
             device_map="auto",
-            dtype=torch.float16,
+            dtype=torch.float16 if "meta-llama/Meta-Llama-3-70B-Instruct" not in model_key else torch.float32,
             dispatch=True,
         )
 
