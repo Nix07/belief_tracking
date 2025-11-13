@@ -67,39 +67,66 @@ def evaluation(
         n_samples: Number of samples to evaluate
         batch_size: Batch size for evaluation
         is_remote: Whether to run model inference remotely
+        visibility: Whether to use visibility samples
 
     Returns:
         float: Accuracy score
     """
     samples = []
+    sample_groups = []  # Track which instances belong to the same logical sample
+    
     for i in range(n_samples):
-        template_idx = 2 if not visibility else random.randint(0, 1)
         characters = random.sample(all_characters, 2)
         objects = random.sample(all_objects, 2)
         states = random.sample(all_states, 2)
-        samples.append(Sample(template_idx, characters, objects, states))
+        
+        if visibility:
+            # Create 2 instances for each sample: one with template_idx 0 and one with template_idx 1
+            sample_0 = Sample(0, characters, objects, states)
+            sample_1 = Sample(1, characters, objects, states)
+            samples.append(sample_0)
+            samples.append(sample_1)
+            # Track that these two instances belong to the same logical sample
+            sample_groups.append([len(samples) - 2, len(samples) - 1])
+        else:
+            template_idx = 2
+            samples.append(Sample(template_idx, characters, objects, states))
+            # Each instance is its own group when not using visibility
+            sample_groups.append([len(samples) - 1])
 
     dataset = Dataset(samples)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
-    correct, total = 0, 0
+    # Store predictions for each instance
+    all_predictions = []
+    all_targets = []
+    
     for bi, batch in tqdm(enumerate(dataloader), total=len(dataloader), desc="Basic evaluation"):
         prompt = batch["prompt"]
         target = batch["target"]
-        batch_size = len(prompt)
+        current_batch_size = len(prompt)
 
         with torch.no_grad():
             with model.trace(prompt, remote=is_remote):
                 pred = model.lm_head.output[:, -1].argmax(dim=-1).save()
 
-            for i in range(batch_size):
-                # print(model.tokenizer.decode([pred[i]]), target[i])
-                if model.tokenizer.decode([pred[i]]).lower().strip() == target[i].lower().strip():
-                    correct += 1
-                total += 1
+            for i in range(current_batch_size):
+                pred_str = model.tokenizer.decode([pred[i]]).lower().strip()
+                target_str = target[i].lower().strip()
+                all_predictions.append(pred_str == target_str)
+                all_targets.append(target_str)
 
             del pred
             torch.cuda.empty_cache()
+
+    # Evaluate correctness: for visibility, a sample is correct only if both instances are correct
+    correct, total = 0, 0
+    for group in sample_groups:
+        # Check if all instances in this group are correct
+        group_correct = all(all_predictions[idx] for idx in group)
+        if group_correct:
+            correct += 1
+        total += 1
 
     acc = round(correct / total, 2)
     return acc
@@ -175,7 +202,7 @@ def main():
         model = LanguageModel(
             args.model,
             device_map="auto",
-            dtype=torch.float16,
+            dtype=torch.float16 if "Meta-Llama-3-70B-Instruct" in args.model else torch.float32,
             dispatch=True,
         )
     print("Model loaded successfully\n")

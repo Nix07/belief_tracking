@@ -58,7 +58,13 @@ def validate(
         or exp_name == "answer_lookback-pointer"
         or exp_name == "answer_lookback-payload"
     ):
-        intervention_positions = exp_to_intervention_positions[exp_name]
+        intervention_positions = exp_to_intervention_positions[exp_name].copy()
+
+        # Qwen2.5-7B-Instruct has a different tokenization scheme
+        if lm.config._name_or_path == "Qwen/Qwen2.5-7B-Instruct" and "answer_lookback" not in exp_name:
+            intervention_positions["cache"] = [i - 1 for i in intervention_positions["cache"]]
+            intervention_positions["patch"] = [i - 1 for i in intervention_positions["patch"]]
+
         patch_to_cache_map = {
             k: v
             for k, v in zip(
@@ -633,6 +639,16 @@ experiment_layers = {
         "visibility_lookback-source": list(range(0, 28)),
         "visibility_lookback-payload": list(range(0, 28)),
         "visibility_lookback-address_and_pointer": list(range(0, 28)),
+    },
+    "Qwen/Qwen2.5-14B-Instruct": {
+        "answer_lookback-payload": list(range(0, 40, 2)),
+        "answer_lookback-pointer": list(range(0, 40, 2)),
+        "binding_lookback-pointer_object": list(range(0, 40, 2)),
+        "binding_lookback-pointer_character": list(range(0, 40, 2)),
+        "binding_lookback-address_and_payload": list(range(0, 40, 2)),
+        "visibility_lookback-source": list(range(0, 40, 2)),
+        "visibility_lookback-payload": list(range(0, 40, 2)),
+        "visibility_lookback-address_and_pointer": list(range(0, 40, 2)),
     },
 }
 
