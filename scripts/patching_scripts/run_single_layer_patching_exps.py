@@ -61,7 +61,7 @@ def validate(
         intervention_positions = exp_to_intervention_positions[exp_name].copy()
 
         # Qwen2.5-7B-Instruct has a different tokenization scheme
-        if lm.config._name_or_path == "Qwen/Qwen2.5-7B-Instruct" and "answer_lookback" not in exp_name:
+        if lm.config.architectures[0] == "Qwen2ForCausalLM" and "answer_lookback" not in exp_name:
             intervention_positions["cache"] = [i - 1 for i in intervention_positions["cache"]]
             intervention_positions["patch"] = [i - 1 for i in intervention_positions["patch"]]
 
@@ -641,14 +641,17 @@ experiment_layers = {
         "visibility_lookback-address_and_pointer": list(range(0, 28)),
     },
     "Qwen/Qwen2.5-14B-Instruct": {
-        "answer_lookback-payload": list(range(0, 40, 2)),
-        "answer_lookback-pointer": list(range(0, 40, 2)),
-        "binding_lookback-pointer_object": list(range(0, 40, 2)),
-        "binding_lookback-pointer_character": list(range(0, 40, 2)),
-        "binding_lookback-address_and_payload": list(range(0, 40, 2)),
-        "visibility_lookback-source": list(range(0, 40, 2)),
-        "visibility_lookback-payload": list(range(0, 40, 2)),
-        "visibility_lookback-address_and_pointer": list(range(0, 40, 2)),
+        "answer_lookback-payload": list(range(0, 48, 2)),
+        "answer_lookback-pointer": list(range(0, 48, 2)),
+        "binding_lookback-pointer_object": list(range(0, 48, 2)),
+        "binding_lookback-pointer_character": list(range(0, 48, 2)),
+        "binding_lookback-address_and_payload": list(range(0, 48, 2)),
+        "binding_lookback-object_oi": list(range(0, 48, 2)),
+        "binding_lookback-character_oi": list(range(0, 48, 2)),
+        "binding_lookback-pointer_charac_and_object": list(range(0, 48, 2)),
+        "visibility_lookback-source": list(range(0, 48, 2)),
+        "visibility_lookback-payload": list(range(0, 48, 2)),
+        "visibility_lookback-address_and_pointer": list(range(0, 48, 2)),
     },
 }
 
@@ -662,6 +665,7 @@ def main(
         "binding_lookback-address_and_payload",
         "binding_lookback-character_oi",
         "binding_lookback-object_oi",
+        "binding_lookback-pointer_charac_and_object",
         "visibility_lookback-source",
         "visibility_lookback-payload",
         "visibility_lookback-address_and_pointer",
@@ -740,7 +744,7 @@ def main(
         lm = LanguageModel(
             model_key,
             device_map="auto",
-            dtype=torch.float16 if "meta-llama/Meta-Llama-3-70B-Instruct" not in model_key else torch.float32,
+            dtype=torch.float16 if "meta-llama/Meta-Llama-3-70B-Instruct" in model_key else torch.float32,
             dispatch=True,
         )
 
