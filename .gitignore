@@ -41,3 +41,5 @@ __pycache__/
 
 env.yml
 results_/
+figures/
+notebooks/patching_figures_plots_only.ipynb
