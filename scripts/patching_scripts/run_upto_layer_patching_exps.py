@@ -26,15 +26,15 @@ from src import global_utils
 os.environ["NDIF_KEY"] = global_utils.load_env_var("NDIF_KEY")
 os.environ["HF_TOKEN"] = global_utils.load_env_var("HF_WRITE")
 
-# IMPORTANT: For qwen model experiments, the character and object indices are shifted by 1
-# since substract these indices by 1 to get the correct indices for the qwen model.
-charac_indices = [130, 132, 145, 146, 157, 158]
-reversed_charac_indices = [132, 130, 157, 158, 145, 146]
-object_indices = [149, 150, 161, 162]
-reversed_object_indices = [161, 162, 149, 150]
-state_indices = [154, 155, 166, 167]
-query_character_indices = [-9, -8]
-query_object_indices = [-6, -5]
+# IMPORTANT: For qwen model experiments, the tokens indices are shifted by,
+# since subtract these indices by 1 to get the correct indices for the qwen model.
+charac_indices = [131, 133, 146, 147, 158, 159]
+reversed_charac_indices = [133, 131, 158, 159, 146, 147]
+object_indices = [150, 151, 162, 163]
+reversed_object_indices = [162, 163, 150, 151]
+state_indices = [155, 156, 167, 168]
+query_character_indices = [-8, -7]
+query_object_indices = [-5, -4]
 
 retain_full_indices = {
     "binding_lookback-object_oi": state_indices + query_character_indices,
