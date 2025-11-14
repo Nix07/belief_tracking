@@ -31,25 +31,25 @@ os.environ["HF_TOKEN"] = global_utils.load_env_var("HF_WRITE")
 charac_indices = [130, 132, 145, 146, 157, 158]
 reversed_charac_indices = [132, 130, 157, 158, 145, 146]
 object_indices = [149, 150, 161, 162]
-reversed_object_indices = [162, 161, 149, 150]
+reversed_object_indices = [161, 162, 149, 150]
 state_indices = [154, 155, 166, 167]
 query_character_indices = [-9, -8]
 query_object_indices = [-6, -5]
 
 retain_full_indices = {
-    "binding_lookback-object_oi": state_indices,
+    "binding_lookback-object_oi": state_indices + query_character_indices,
     "binding_lookback-character_oi": object_indices + state_indices,
     "binding_lookback-source_1": state_indices,
     "binding_lookback-source_2": [],
 }
 retain_upto_indices = {
-    "binding_lookback-object_oi": query_object_indices,
-    "binding_lookback-character_oi": query_character_indices,
+    "binding_lookback-object_oi": [],
+    "binding_lookback-character_oi": [],
     "binding_lookback-source_1": [],
     "binding_lookback-source_2": [],
 }
 patch_indices = {
-    "binding_lookback-object_oi": reversed_object_indices,
+    "binding_lookback-object_oi": reversed_charac_indices + reversed_object_indices,
     "binding_lookback-character_oi": reversed_charac_indices,
     "binding_lookback-source_1": reversed_charac_indices + reversed_object_indices,
     "binding_lookback-source_2": reversed_charac_indices + reversed_object_indices,
