@@ -155,7 +155,7 @@ exp_to_ds_func_map = {
     "binding_lookback-address_and_payload": get_reversed_sentence_counterfacts,
     "visibility_lookback-payload": get_visibility_lookback_data,
     "visibility_lookback-source": get_visibility_lookback_data,
-    "visibility_lookback-address_and_payload": get_visibility_lookback_data,
+    "visibility_lookback-address_and_pointer": get_visibility_lookback_data,
     "vis_2nd_to_1st_and_ques": get_visibility_lookback_data,
     "binding_lookback-source_1": get_reversed_sent_diff_state_counterfacts,
     "binding_lookback-source_2": get_reversed_sent_diff_state_counterfacts,
@@ -168,7 +168,7 @@ bigtom_exp_to_ds_func_map = {
     "binding_lookback-pointer_character": get_binding_lookback_pointer_exps,
     "visibility_lookback-source": get_visibility_lookback_exps,
     "visibility_lookback-payload": get_visibility_lookback_exps,
-    "visibility_lookback-address_and_payload": get_visibility_lookback_exps,
+    "visibility_lookback-address_and_pointer": get_visibility_lookback_exps,
 }
 
 exp_to_vec_type = {
@@ -181,7 +181,7 @@ exp_to_vec_type = {
     "binding_lookback-character_oi": "character_tokens",
     "visibility_lookback-payload": None,
     "visibility_lookback-source": "second_visibility_sent",
-    "visibility_lookback-address_and_payload": None,
+    "visibility_lookback-address_and_pointer": None,
     "vis_2nd_to_1st_and_ques": None,
     "binding_lookback-source_1": ["object_tokens", "character_tokens"],
     "binding_lookback-source_2": ["object_tokens", "character_tokens"],
@@ -210,7 +210,7 @@ bigtom_exp_to_intervention_positions = {
         "cache_offset": [0, 0],
         "patch_offset": [0, 0],
     },
-    "visibility_lookback-address_and_payload": {
+    "visibility_lookback-address_and_pointer": {
         "cache": ["alt_ques_start_idx", "alt_prompt_len"],
         "patch": ["org_ques_start_idx", "org_prompt_len"],
         "cache_offset": [0, 0],
@@ -239,7 +239,7 @@ exp_to_intervention_positions = {
         "cache": [155, 156, 167, 168],
         "patch": [167, 168, 155, 156],
     },
-    "visibility_lookback-payload": {
+    "visibility_lookback-source": {
         "cache": [i for i in range(176, 183)],
         "patch": [i for i in range(176, 183)],
     },
@@ -247,7 +247,7 @@ exp_to_intervention_positions = {
         "cache": [i for i in range(183, 195)],
         "patch": [i for i in range(183, 195)],
     },
-    "visibility_lookback-address_and_payload": {
+    "visibility_lookback-address_and_pointer": {
         "cache": [i for i in range(176, 195)],  # second visibility + question
         "patch": [i for i in range(176, 195)],  # second visibility + question
     },

@@ -20,35 +20,36 @@ from run_patching_exp_utils import (
     set_seed,
 )
 
-from src import env_utils
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from src import global_utils
 
-os.environ["NDIF_KEY"] = env_utils.load_env_var("NDIF_KEY")
-os.environ["HF_TOKEN"] = env_utils.load_env_var("HF_WRITE")
+os.environ["NDIF_KEY"] = global_utils.load_env_var("NDIF_KEY")
+os.environ["HF_TOKEN"] = global_utils.load_env_var("HF_WRITE")
 
+# IMPORTANT: For qwen model experiments, the tokens indices are shifted by,
+# since subtract these indices by 1 to get the correct indices for the qwen model.
 charac_indices = [131, 133, 146, 147, 158, 159]
 reversed_charac_indices = [133, 131, 158, 159, 146, 147]
-
 object_indices = [150, 151, 162, 163]
 reversed_object_indices = [162, 163, 150, 151]
-
 state_indices = [155, 156, 167, 168]
 query_character_indices = [-8, -7]
 query_object_indices = [-5, -4]
 
 retain_full_indices = {
-    "binding_lookback-object_oi": state_indices,
+    "binding_lookback-object_oi": state_indices + query_character_indices,
     "binding_lookback-character_oi": object_indices + state_indices,
     "binding_lookback-source_1": state_indices,
     "binding_lookback-source_2": [],
 }
 retain_upto_indices = {
-    "binding_lookback-object_oi": query_object_indices,
-    "binding_lookback-character_oi": query_character_indices,
+    "binding_lookback-object_oi": [],
+    "binding_lookback-character_oi": [],
     "binding_lookback-source_1": [],
     "binding_lookback-source_2": [],
 }
 patch_indices = {
-    "binding_lookback-object_oi": reversed_object_indices,
+    "binding_lookback-object_oi": reversed_charac_indices + reversed_object_indices,
     "binding_lookback-character_oi": reversed_charac_indices,
     "binding_lookback-source_1": reversed_charac_indices + reversed_object_indices,
     "binding_lookback-source_2": reversed_charac_indices + reversed_object_indices,
@@ -119,9 +120,9 @@ def validate(
     for batch_idx, batch in tqdm(
         enumerate(validation_loader), total=len(validation_loader)
     ):
-        alt_prompts = batch["corrupt_prompt"]
+        alt_prompts = batch["counterfactual_prompt"]
         org_prompts = batch["clean_prompt"]
-        targets = batch["target"] if "target" in batch else batch["corrupt_target"]
+        targets = batch["target"] if "target" in batch else batch["counterfactual_target"]
         target_tokens = lm.tokenizer(targets, return_tensors="pt").input_ids[:, -1]
         batch_size = target_tokens.size(0)
         alt_acts, org_acts = defaultdict(dict), defaultdict(dict)
@@ -132,14 +133,14 @@ def validate(
                     for layer in range(0, layer_idx + 1):
                         for t in interesting_positions:
                             alt_acts[layer][t] = (
-                                lm.model.layers[layer].output[0][:, t].clone()
+                                lm.model.layers[layer].output[:, t].clone()
                             )
 
                 with tracer.invoke(org_prompts):
                     for layer in range(0, lm.config.num_hidden_layers):
                         for t in interesting_positions:
                             org_acts[layer][t] = (
-                                lm.model.layers[layer].output[0][:, t].clone()
+                                lm.model.layers[layer].output[:, t].clone()
                             )
 
                 with tracer.invoke(org_prompts):
@@ -154,12 +155,12 @@ def validate(
                                 projection = projections[layer].to(device=device_p)
                         if exp_name == "object_position":
                             for t in reversed_charac_indices:
-                                lm.model.layers[layer].output[0][:, t] = alt_acts[
+                                lm.model.layers[layer].output[:, t] = alt_acts[
                                     layer
                                 ][patch_to_cache_map[t]]
 
                         for t in patch_indices[exp_name]:
-                            curr_output = lm.model.layers[layer].output[0][:, t].clone()
+                            curr_output = lm.model.layers[layer].output[:, t].clone()
                             if projections is not None:
                                 if is_mixed_projections(exp_name):
                                     if t in charac_indices:
@@ -179,17 +180,17 @@ def validate(
                             else:
                                 patch = alt_acts[layer][patch_to_cache_map[t]]
 
-                            lm.model.layers[layer].output[0][:, t] = patch
+                            lm.model.layers[layer].output[:, t] = patch
 
                         for t in retain_upto_indices[exp_name]:
-                            lm.model.layers[layer].output[0][:, t] = org_acts[layer][t]
+                            lm.model.layers[layer].output[:, t] = org_acts[layer][t]
 
                     for layer in range(lm.config.num_hidden_layers):
                         for t in retain_full_indices[exp_name]:
-                            if not restore_state:
-                                if t in state_indices:
-                                    continue
-                            lm.model.layers[layer].output[0][:, t] = org_acts[layer][t]
+                            # if not restore_state:
+                            #     if t in state_indices:
+                            #         continue
+                            lm.model.layers[layer].output[:, t] = org_acts[layer][t]
 
                     logits = lm.lm_head.output[:, -1]
                     logits = logits.save() if return_logits else logits
@@ -307,9 +308,9 @@ def get_low_rank_projection(
         epoch_loss = 0
 
         for batch_idx, batch in tqdm(enumerate(train_loader), total=len(train_loader)):
-            alt_prompts = batch["corrupt_prompt"]
+            alt_prompts = batch["counterfactual_prompt"]
             org_prompts = batch["clean_prompt"]
-            targets = batch["target"] if "target" in batch else batch["corrupt_target"]
+            targets = batch["target"] if "target" in batch else batch["counterfactual_target"]
             target_tokens = lm.tokenizer(targets, return_tensors="pt").input_ids[:, -1]
             batch_size = target_tokens.size(0)
             alt_acts, org_acts = defaultdict(dict), defaultdict(dict)
@@ -319,21 +320,21 @@ def get_low_rank_projection(
                     for layer in range(0, layer_idx + 1):
                         for t in interesting_positions:
                             alt_acts[layer][t] = (
-                                lm.model.layers[layer].output[0][:, t].clone()
+                                lm.model.layers[layer].output[:, t].clone()
                             )
 
                 with tracer.invoke(org_prompts):
                     for layer in range(0, lm.config.num_hidden_layers):
                         for t in interesting_positions:
                             org_acts[layer][t] = (
-                                lm.model.layers[layer].output[0][:, t].clone()
+                                lm.model.layers[layer].output[:, t].clone()
                             )
 
                 with tracer.invoke(org_prompts):
                     for layer in range(0, layer_idx + 1):
                         if exp_name == "object_position":
                             for t in reversed_charac_indices:
-                                lm.model.layers[layer].output[0][:, t] = alt_acts[
+                                lm.model.layers[layer].output[:, t] = alt_acts[
                                     layer
                                 ][patch_to_cache_map[t]]
 
@@ -365,23 +366,23 @@ def get_low_rank_projection(
                             else:
                                 proj = projection
 
-                            curr_output = lm.model.layers[layer].output[0][:, t].clone()
+                            curr_output = lm.model.layers[layer].output[:, t].clone()
                             alt_proj = torch.matmul(
                                 alt_acts[layer][patch_to_cache_map[t]], proj
                             )
                             org_proj = torch.matmul(curr_output, proj)
                             patch = curr_output - org_proj + alt_proj
-                            lm.model.layers[layer].output[0][:, t] = patch
+                            lm.model.layers[layer].output[:, t] = patch
 
                         for t in retain_upto_indices[exp_name]:
-                            lm.model.layers[layer].output[0][:, t] = org_acts[layer][t]
+                            lm.model.layers[layer].output[:, t] = org_acts[layer][t]
 
                     for layer in range(lm.config.num_hidden_layers):
                         for t in retain_full_indices[exp_name]:
                             if not restore_state:
                                 if t in state_indices:
                                     continue
-                            lm.model.layers[layer].output[0][:, t] = org_acts[layer][t]
+                            lm.model.layers[layer].output[:, t] = org_acts[layer][t]
 
                     logits = lm.lm_head.output[:, -1].save()
 
@@ -506,6 +507,7 @@ def run_experiment(
     restore_state: bool = True,
     save_outputs_on_val: bool = False,
     remote: bool = False,
+    skip_subspace_patching: bool = True,
 ):
     print("#" * 30)
     print(f"Running experiment: {experiment_name}")
@@ -517,7 +519,12 @@ def run_experiment(
     lm_shorthand = lm.config._name_or_path.split("/")[-1]
     if remote:
         lm_shorthand = f"{lm_shorthand}-8bit-remote"
-    save_path = os.path.join(save_path, lm_shorthand, experiment_name)
+    save_path = os.path.join(
+        save_path, 
+        lm_shorthand, 
+        experiment_name.split("-")[0], 
+        experiment_name.split("-")[1],
+    )
     os.makedirs(save_path, exist_ok=True)
 
     train_dataloader, valid_dataloader = prepare_dataset(
@@ -534,6 +541,7 @@ def run_experiment(
 
     skip_low_rank_projection = (experiment_name in exclude_projections) or (
         "405B" in lm.config._name_or_path
+        or skip_subspace_patching
     )
 
     if not skip_low_rank_projection:
@@ -640,6 +648,18 @@ experiment_layers = {
         "binding_lookback-object_oi": list(range(20, 80, 2)),
         "binding_lookback-character_oi": list(range(20, 80, 2)),
     },
+    "Qwen/Qwen2.5-7B-Instruct": {
+        "binding_lookback-source_1": list(range(0, 28)),
+        "binding_lookback-source_2": list(range(0, 28)),
+        "binding_lookback-object_oi": list(range(0, 28)),
+        "binding_lookback-character_oi": list(range(0, 28)),
+    },
+    "Qwen/Qwen2.5-14B-Instruct": {
+        "binding_lookback-source_1": list(range(0, 48, 2)),
+        "binding_lookback-source_2": list(range(0, 48, 2)),
+        "binding_lookback-object_oi": list(range(0, 48, 2)),
+        "binding_lookback-character_oi": list(range(0, 48, 2)),
+    },
 }
 
 
@@ -659,19 +679,19 @@ def main(
     learning_rate: float = 0.1,
     n_epochs: int = 1,
     lamb: float = 0.01,
-    save_path: str = "experiments/causalToM_novis/results",
+    save_path: str = "results/causalToM_novis/",
     save_outputs: bool = False,
     restore_state: bool = True,
-    no_restore_state: bool = False,
     remote: bool = False,
+    skip_subspace_patching: bool = True,
 ):
     if remote:
         lm = LanguageModel("meta-llama/Meta-Llama-3.1-405B-Instruct")
     else:
         lm = LanguageModel(
-            "meta-llama/Meta-Llama-3-70B-Instruct",
+            model_key,
             device_map="auto",
-            torch_dtype=torch.float16,
+            dtype=torch.float16 if "meta-llama/Meta-Llama-3-70B-Instruct" in model_key else torch.float32,
             dispatch=True,
         )
 
@@ -703,6 +723,7 @@ def main(
         restore_state=restore_state,
         save_outputs_on_val=save_outputs,
         remote=remote,
+        skip_subspace_patching=skip_subspace_patching,
     )
 
 

@@ -1,0 +1,14 @@
+meta-llama/Llama-2-7b-hf
+Qwen/Qwen2.5-7B
+Qwen/Qwen2.5-7B-Instruct
+meta-llama/Meta-Llama-3-8B
+meta-llama/Meta-Llama-3-8B-Instruct
+meta-llama/Llama-3.1-8B
+meta-llama/Llama-3.1-8B-Instruct
+meta-llama/Llama-2-13b-hf
+allenai/OLMo-2-1124-13B-Instruct
+Qwen/Qwen2.5-14B
+Qwen/Qwen2.5-14B-Instruct
+google/gemma-3-27b-it
+allenai/OLMo-2-0325-32B-Instruct
+meta-llama/Meta-Llama-3-70B-Instruct

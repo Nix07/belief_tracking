@@ -513,7 +513,7 @@ def get_object_oi_exps(
     Returns:
         list: List of dictionaries containing clean and corrupt samples with their configurations
     """
-    clean_configs, corrupt_configs = [], []
+    clean_configs, counterfactual_configs = [], []
     samples = []
 
     for idx in range(n_samples):
@@ -540,10 +540,10 @@ def get_object_oi_exps(
             objects=list(reversed(containers)),
             states=new_states,
         )
-        corrupt_configs.append(sample)
+        counterfactual_configs.append(sample)
 
     clean_dataset = Dataset(clean_configs)
-    corrupt_dataset = Dataset(corrupt_configs)
+    counterfactual_dataset = Dataset(counterfactual_configs)
 
     for idx in range(n_samples):
         random_choice = random.choice([0, 1])
@@ -553,7 +553,7 @@ def get_object_oi_exps(
             set_container=random_choice,
             set_character=1 ^ random_choice,
         )
-        corrupt = corrupt_dataset.__getitem__(
+        counterfactual = counterfactual_dataset.__getitem__(
             idx,
             set_container=1 ^ random_choice,
             set_character=1 ^ random_choice,
@@ -568,13 +568,13 @@ def get_object_oi_exps(
                 "clean_question": clean["question"],
                 "clean_prompt": clean["prompt"],
                 "clean_ans": clean["target"],
-                "corrupt_characters": corrupt["characters"],
-                "corrupt_objects": corrupt["objects"],
-                "corrupt_states": corrupt["states"],
-                "corrupt_story": corrupt["story"],
-                "corrupt_question": corrupt["question"],
-                "corrupt_prompt": corrupt["prompt"],
-                "corrupt_ans": corrupt["target"],
+                "counterfactual_characters": counterfactual["characters"],
+                "counterfactual_objects": counterfactual["objects"],
+                "counterfactual_states": counterfactual["states"],
+                "counterfactual_story": counterfactual["story"],
+                "counterfactual_question": counterfactual["question"],
+                "counterfactual_prompt": counterfactual["prompt"],
+                "counterfactual_ans": counterfactual["target"],
                 "target": " " + clean_configs[idx].states[1 ^ random_choice],
             }
         )
@@ -588,7 +588,20 @@ def get_character_oi_exps(
     all_states,
     n_samples,
 ):
-    clean_configs, corrupt_configs = [], []
+    """
+    Generates samples for character OI experiments by creating clean and counterfactual configurations
+    with different states and character-object mappings.
+
+    Args:
+        all_characters (list): List of available characters
+        all_objects (list): List of available objects/containers
+        all_states (list): List of available states
+        n_samples (int): Number of samples to generate
+
+    Returns:
+        list: List of dictionaries containing clean and counterfactual samples with their configurations
+    """
+    clean_configs, counterfactual_configs = [], []
     samples = []
 
     for idx in range(n_samples):
@@ -615,10 +628,10 @@ def get_character_oi_exps(
             objects=list(reversed(containers)),
             states=new_states,
         )
-        corrupt_configs.append(sample)
+        counterfactual_configs.append(sample)
 
     clean_dataset = Dataset(clean_configs)
-    corrupt_dataset = Dataset(corrupt_configs)
+    counterfactual_dataset = Dataset(counterfactual_configs)
 
     for idx in range(n_samples):
         random_choice = random.choice([0, 1])
@@ -628,7 +641,7 @@ def get_character_oi_exps(
             set_container=1 ^ random_choice,
             set_character=random_choice,
         )
-        corrupt = corrupt_dataset.__getitem__(
+        counterfactual = counterfactual_dataset.__getitem__(
             idx,
             set_container=1 ^ random_choice,
             set_character=1 ^ random_choice,
@@ -643,13 +656,13 @@ def get_character_oi_exps(
                 "clean_question": clean["question"],
                 "clean_prompt": clean["prompt"],
                 "clean_ans": clean["target"],
-                "corrupt_characters": corrupt["characters"],
-                "corrupt_objects": corrupt["objects"],
-                "corrupt_states": corrupt["states"],
-                "corrupt_story": corrupt["story"],
-                "corrupt_question": corrupt["question"],
-                "corrupt_prompt": corrupt["prompt"],
-                "corrupt_ans": corrupt["target"],
+                "counterfactual_characters": counterfactual["characters"],
+                "counterfactual_objects": counterfactual["objects"],
+                "counterfactual_states": counterfactual["states"],
+                "counterfactual_story": counterfactual["story"],
+                "counterfactual_question": counterfactual["question"],
+                "counterfactual_prompt": counterfactual["prompt"],
+                "counterfactual_ans": counterfactual["target"],
                 "target": " " + clean_configs[idx].states[1 ^ random_choice],
             }
         )
