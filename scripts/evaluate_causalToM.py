@@ -54,7 +54,8 @@ def evaluation(
     n_samples: int = 10, 
     batch_size: int = 1, 
     is_remote: bool = False,
-    visibility: bool = False
+    visibility: bool = False,
+    new_setup: bool = False
     ) -> float:
     """
     Basic accuracy evaluation on a simple dataset.
@@ -68,6 +69,7 @@ def evaluation(
         batch_size: Batch size for evaluation
         is_remote: Whether to run model inference remotely
         visibility: Whether to use visibility samples
+        new_setup: Whether to use story templates with 3 characters
 
     Returns:
         float: Accuracy score
@@ -76,20 +78,36 @@ def evaluation(
     sample_groups = []  # Track which instances belong to the same logical sample
     
     for i in range(n_samples):
-        characters = random.sample(all_characters, 2)
-        objects = random.sample(all_objects, 2)
-        states = random.sample(all_states, 2)
+        if new_setup:
+            characters = random.sample(all_characters, 3)
+            objects = random.sample(all_objects, 3)
+            states = random.sample(all_states, 3)
+        else:
+            characters = random.sample(all_characters, 2)
+            objects = random.sample(all_objects, 2)
+            states = random.sample(all_states, 2)
         
         if visibility:
-            # Create 2 instances for each sample: one with template_idx 0 and one with template_idx 1
-            sample_0 = Sample(0, characters, objects, states)
-            sample_1 = Sample(1, characters, objects, states)
-            samples.append(sample_0)
-            samples.append(sample_1)
+            # Create 2 or 3 instances for each sample: one with template_idx 0 and one with template_idx 1
+            if new_setup:
+                sample_0 = Sample(4, characters, objects, states)
+                sample_1 = Sample(5, characters, objects, states)
+                sample_2 = Sample(6, characters, objects, states)
+                sample_3 = Sample(7, characters, objects, states)
+                samples.append(sample_0)
+                samples.append(sample_1)
+                samples.append(sample_2)
+                samples.append(sample_3)
+                sample_groups.append([len(samples) - 4, len(samples) - 3, len(samples) - 2, len(samples) - 1])
+            else:
+                sample_0 = Sample(0, characters, objects, states)
+                sample_1 = Sample(1, characters, objects, states)
+                samples.append(sample_0)
+                samples.append(sample_1)
             # Track that these two instances belong to the same logical sample
             sample_groups.append([len(samples) - 2, len(samples) - 1])
         else:
-            template_idx = 2
+            template_idx = 8 if new_setup else 2
             samples.append(Sample(template_idx, characters, objects, states))
             # Each instance is its own group when not using visibility
             sample_groups.append([len(samples) - 1])
@@ -113,6 +131,7 @@ def evaluation(
             for i in range(current_batch_size):
                 pred_str = model.tokenizer.decode([pred[i]]).lower().strip()
                 target_str = target[i].lower().strip()
+                # print(f"Pred: {pred_str}, Target: {target_str}")
                 all_predictions.append(pred_str == target_str)
                 all_targets.append(target_str)
 
@@ -180,6 +199,11 @@ def main():
         default=10,
         help="Number of independent evaluation runs",
     )
+    parser.add_argument(
+        "--new_setup",
+        action="store_true",
+        help="Use story templates with 3 characters",
+    )
 
     args = parser.parse_args()
 
@@ -224,7 +248,8 @@ def main():
             n_samples=args.n_samples, 
             batch_size=args.batch_size, 
             is_remote=args.remote,
-            visibility=args.visibility
+            visibility=args.visibility,
+            new_setup=args.new_setup
         )
         accuracies.append(acc)
         print(f"Run {run_idx + 1} accuracy: {acc}")
@@ -260,11 +285,19 @@ def main():
     # Save results
     if args.save_results:
         # Include model name in the save path
-        if not args.visibility:
-            args.save_results = os.path.join(args.save_results, args.model.split("/")[-1] + ".json")
-        else:
-            args.save_results = os.path.join(args.save_results, args.model.split("/")[-1] + "_vis.json")
-        os.makedirs(os.path.dirname(args.save_results) or ".", exist_ok=True)
+        model_name = args.model.split("/")[-1]
+        if args.visibility:
+            filename = model_name + "_vis.json"
+        if args.new_setup:
+            filename = model_name + "_new_setup"
+        filename = model_name + ".json"
+        
+        args.save_results = os.path.join(args.save_results, filename)
+
+        # Create directory if it doesn't exist
+        save_dir = os.path.dirname(args.save_results)
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
         with open(args.save_results, "w") as f:
             json.dump(results, f, indent=2)
         print(f"\nResults saved to {args.save_results}")
