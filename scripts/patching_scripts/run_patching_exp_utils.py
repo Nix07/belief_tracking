@@ -239,6 +239,10 @@ exp_to_intervention_positions = {
         "cache": [155, 156, 167, 168],
         "patch": [167, 168, 155, 156],
     },
+    "binding_lookback-address_and_payload-3entities": {
+        "cache": [157, 158, 169, 170, 182, 183],
+        "patch": [169, 170, 182, 183, 157, 158],
+    },
     "visibility_lookback-source": {
         "cache": [i for i in range(176, 183)],
         "patch": [i for i in range(176, 183)],
@@ -416,6 +420,7 @@ def prepare_dataset(
     batch_size: int = 4,
     lm: LanguageModel | None = None,
     remote: bool = False,
+    new_config: bool = False,
 ):
     all_characters = json.load(
         open(
@@ -447,6 +452,7 @@ def prepare_dataset(
         all_objects,
         all_states,
         2 * (train_size + valid_size),
+        new_config=new_config,
     )
 
     if lm is not None:

@@ -28,13 +28,23 @@ os.environ["HF_TOKEN"] = global_utils.load_env_var("HF_WRITE")
 
 # IMPORTANT: For qwen model experiments, the tokens indices are shifted by,
 # since subtract these indices by 1 to get the correct indices for the qwen model.
-charac_indices = [131, 133, 146, 147, 158, 159]
-reversed_charac_indices = [133, 131, 158, 159, 146, 147]
-object_indices = [150, 151, 162, 163]
-reversed_object_indices = [162, 163, 150, 151]
-state_indices = [155, 156, 167, 168]
-query_character_indices = [-8, -7]
-query_object_indices = [-5, -4]
+# charac_indices = [131, 133, 146, 147, 158, 159]
+# reversed_charac_indices = [133, 131, 158, 159, 146, 147]
+# object_indices = [150, 151, 162, 163]
+# reversed_object_indices = [162, 163, 150, 151]
+# state_indices = [155, 156, 167, 168]
+# query_character_indices = [-8, -7]
+# query_object_indices = [-5, -4]
+
+# 3 entities setting
+charac_indices = [130, 132, 135, 148, 149, 160, 161, 173, 174]
+object_indices = [152, 153, 164, 165, 177, 178]
+state_indices = [157, 158, 169, 170, 182, 183]
+reversed_charac_indices = [132, 135, 130, 160, 161, 173, 174, 148, 149]
+reversed_object_indices = [164, 165, 177, 178, 152, 153]
+reversed_state_indices = [169, 170, 182, 183, 157, 158]
+query_character_indices = [-9, -8]
+query_object_indices = [-6, -5]
 
 retain_full_indices = {
     "binding_lookback-object_oi": state_indices + query_character_indices,
@@ -79,6 +89,7 @@ def validate(
     save_outputs: bool = True,
     projection_type: Literal["full_rank", "singular_vector"] = "full_rank",
     remote: bool = False,
+    new_config: bool = False,
 ) -> float:
     save_outputs = save_outputs and not remote
 
@@ -508,6 +519,7 @@ def run_experiment(
     save_outputs_on_val: bool = False,
     remote: bool = False,
     skip_subspace_patching: bool = True,
+    new_config: bool = False,
 ):
     print("#" * 30)
     print(f"Running experiment: {experiment_name}")
@@ -522,6 +534,7 @@ def run_experiment(
     save_path = os.path.join(
         save_path, 
         lm_shorthand, 
+        "3_entities" if new_config else "",
         experiment_name.split("-")[0], 
         experiment_name.split("-")[1],
     )
@@ -534,6 +547,7 @@ def run_experiment(
         valid_size=validation_size,
         batch_size=batch_size,
         remote=remote,
+        new_config=new_config,
     )
 
     singular_vectors = None
@@ -572,6 +586,7 @@ def run_experiment(
             save_outputs=save_outputs_on_val,
             restore_state=restore_state,
             remote=remote,
+            new_config=new_config,
         )
         print("-" * 30)
         print(f"Full state patching val: {full_acc}")
@@ -684,6 +699,7 @@ def main(
     restore_state: bool = True,
     remote: bool = False,
     skip_subspace_patching: bool = True,
+    new_config: bool = False, # Experiment 3 entities setting
 ):
     if remote:
         lm = LanguageModel("meta-llama/Meta-Llama-3.1-405B-Instruct")
@@ -724,6 +740,7 @@ def main(
         save_outputs_on_val=save_outputs,
         remote=remote,
         skip_subspace_patching=skip_subspace_patching,
+        new_config=new_config,
     )
 
 

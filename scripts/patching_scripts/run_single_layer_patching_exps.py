@@ -52,16 +52,19 @@ def validate(
     projection_type: Literal["full_rank", "singular_vector"] = "full_rank",
     bigtom: bool = False,
     remote: bool = False,
+    new_config: bool = False,
 ) -> float:
     if (
         not bigtom
         or exp_name == "answer_lookback-pointer"
         or exp_name == "answer_lookback-payload"
     ):
+        if new_config and "binding_lookback-address_and_payload" in exp_name:
+            exp_name = exp_name + "-3entities"
         intervention_positions = exp_to_intervention_positions[exp_name].copy()
 
         # Qwen2.5-7B-Instruct has a different tokenization scheme
-        if lm.config.architectures[0] == "Qwen2ForCausalLM" and "answer_lookback" not in exp_name:
+        if lm.config.architectures[0] == "Qwen2ForCausalLM" and "answer_lookback" not in exp_name and not new_config:
             intervention_positions["cache"] = [i - 1 for i in intervention_positions["cache"]]
             intervention_positions["patch"] = [i - 1 for i in intervention_positions["patch"]]
 
@@ -458,6 +461,7 @@ def run_experiment(
     bigtom: bool = False,
     remote: bool = False,
     skip_subspace_patching: bool = True,
+    new_config: bool = False,
 ):
     print("#" * 30)
     print(f"Running experiment: {experiment_name}")
@@ -468,6 +472,7 @@ def run_experiment(
     save_path = os.path.join(
         save_path,
         lm_shorthand,
+        "3_entities" if new_config else "",
         experiment_name.split("-")[0],
         experiment_name.split("-")[1],
     )
@@ -481,6 +486,7 @@ def run_experiment(
             valid_size=validation_size,
             batch_size=batch_size,
             remote=remote,
+            new_config=new_config,
         )
     else:
         train_dataloader, valid_dataloader = prepare_bigtom_dataset(
@@ -542,6 +548,7 @@ def run_experiment(
             projection_type="full_rank",
             bigtom=bigtom,
             remote=remote,
+            new_config=new_config,
         )
         print("-" * 30)
         print(f"Full state patching val: {full_acc}")
@@ -582,6 +589,7 @@ def run_experiment(
                 projection_type="singular_vector",
                 remote=remote,
                 bigtom=bigtom,
+                new_config=new_config,
             )
             print("-" * 30)
             print(
@@ -685,6 +693,7 @@ def main(
     bigtom: bool = False,
     remote: bool = False,
     skip_subspace_patching: bool = True,
+    new_config: bool = False, # Experiment 3 entities setting
 ):
     """
     Run single layer patching experiments.
@@ -705,6 +714,7 @@ def main(
         bigtom: Whether to run experiments on BigToM
         verbose: Whether to print verbose output
         remote: Whether to run experiments remotely
+        new_config: Whether to use the new config with 3 entities
     """
     if lamb is None:
         if experiment == "visibility_lookback-source":
@@ -738,6 +748,7 @@ def main(
     print(f"Remote: {remote}")
     print(f"Verbose: {verbose}")
     print(f"Skip subspace patching: {skip_subspace_patching}")
+    print(f"New config: {new_config}")
     if remote:
         lm = LanguageModel("meta-llama/Meta-Llama-3.1-405B-Instruct")
     else:
@@ -777,6 +788,7 @@ def main(
         bigtom=bigtom,
         remote=remote,
         skip_subspace_patching=skip_subspace_patching,
+        new_config=new_config,
     )
 
 
