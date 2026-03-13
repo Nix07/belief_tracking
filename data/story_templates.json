@@ -9,11 +9,13 @@
             ],
             "container": [
                 "<container_1>",
-                "<container_2>"
+                "<container_2>",
+                "<container_3>"
             ],
             "state": [
                 "<state_1>",
-                "<state_2>"
+                "<state_2>",
+                "<state_3>"
             ]
         },
         "event": {
@@ -59,6 +61,46 @@
             "event_noticed": "<character_1> <noticed/didn't notice> the swap occurring.",
             "question": "What does <character_q> believe the <container_q> contains?",
             "state_question": "What does the <container_q> contain?",
+            "container_type": "bottles",
+            "state_type": "drinks"
+        },
+        {
+            "context": "<character_1>, <character_2>, and <character_3> are working in a busy restaurant. To complete an order, <character_1> grabs an opaque <container_1> and fills it with <state_1>. Then <character_2> grabs another opaque <container_2> and fills it with <state_2>. Finally, <character_3> grabs another opaque <container_3> and fills it with <state_3>. <character_3> cannot observe <character_1>'s actions. <character_3> cannot observe <character_2>'s actions.",
+            "causal_event": "A co-worker named <character_2> didn't hear the customer's request and swaps the <state_event> in the <container_event> with <state_swap> while <character_1> was attending to another task.",
+            "event_noticed": "<character_1> <noticed/didn't notice> the swap occurring.",
+            "question": "What does <character_q> believe the <container_q> contains?",
+            "container_type": "bottles",
+            "state_type": "drinks"
+        },
+        {
+            "context": "<character_1>, <character_2>, and <character_3> are working in a busy restaurant. To complete an order, <character_1> grabs an opaque <container_1> and fills it with <state_1>. Then <character_2> grabs another opaque <container_2> and fills it with <state_2>. Finally, <character_3> grabs another opaque <container_3> and fills it with <state_3>. <character_3> cannot observe <character_1>'s actions. <character_3> can observe <character_2>'s actions.",
+            "causal_event": "A co-worker named <character_2> didn't hear the customer's request and swaps the <state_event> in the <container_event> with <state_swap> while <character_1> was attending to another task.",
+            "event_noticed": "<character_1> <noticed/didn't notice> the swap occurring.",
+            "question": "What does <character_q> believe the <container_q> contains?",
+            "container_type": "bottles",
+            "state_type": "drinks"
+        },
+        {
+            "context": "<character_1>, <character_2>, and <character_3> are working in a busy restaurant. To complete an order, <character_1> grabs an opaque <container_1> and fills it with <state_1>. Then <character_2> grabs another opaque <container_2> and fills it with <state_2>. Finally, <character_3> grabs another opaque <container_3> and fills it with <state_3>. <character_3> cannot observe <character_2>'s actions. <character_3> cannot observe <character_1>'s actions.",
+            "causal_event": "A co-worker named <character_2> didn't hear the customer's request and swaps the <state_event> in the <container_event> with <state_swap> while <character_1> was attending to another task.",
+            "event_noticed": "<character_1> <noticed/didn't notice> the swap occurring.",
+            "question": "What does <character_q> believe the <container_q> contains?",
+            "container_type": "bottles",
+            "state_type": "drinks"
+        },
+        {
+            "context": "<character_1>, <character_2>, and <character_3> are working in a busy restaurant. To complete an order, <character_1> grabs an opaque <container_1> and fills it with <state_1>. Then <character_2> grabs another opaque <container_2> and fills it with <state_2>. Finally, <character_3> grabs another opaque <container_3> and fills it with <state_3>. <character_3> cannot observe <character_2>'s actions. <character_3> can observe <character_1>'s actions.",
+            "causal_event": "A co-worker named <character_2> didn't hear the customer's request and swaps the <state_event> in the <container_event> with <state_swap> while <character_1> was attending to another task.",
+            "event_noticed": "<character_1> <noticed/didn't notice> the swap occurring.",
+            "question": "What does <character_q> believe the <container_q> contains?",
+            "container_type": "bottles",
+            "state_type": "drinks"
+        },
+        {
+            "context": "<character_1>, <character_2>, and <character_3> are working in a busy restaurant. To complete an order, <character_1> grabs an opaque <container_1> and fills it with <state_1>. Then <character_2> grabs another opaque <container_2> and fills it with <state_2>. Finally, <character_3> grabs another opaque <container_3> and fills it with <state_3>.",
+            "causal_event": "A co-worker named <character_2> didn't hear the customer's request and swaps the <state_event> in the <container_event> with <state_swap> while <character_1> was attending to another task.",
+            "event_noticed": "<character_1> <noticed/didn't notice> the swap occurring.",
+            "question": "What does <character_q> believe the <container_q> contains?",
             "container_type": "bottles",
             "state_type": "drinks"
         }

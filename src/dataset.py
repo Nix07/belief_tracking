@@ -51,40 +51,51 @@ class Sample(DataClassJsonMixin):
             )
 
         # containers
-        self.story = self.story.replace(
-            STORY_TEMPLATES["placeholders"]["entity"]["container"][0],
-            self.objects[0],
-        )
-        self.story = self.story.replace(
-            STORY_TEMPLATES["placeholders"]["entity"]["container"][1],
-            self.objects[1],
-        )
+        for i in range(len(self.objects)):
+            self.story = self.story.replace(
+                STORY_TEMPLATES["placeholders"]["entity"]["container"][i],
+                self.objects[i],
+            )
 
         # states
-        self.story = self.story.replace(
-            STORY_TEMPLATES["placeholders"]["entity"]["state"][0], self.states[0]
-        )
-        self.story = self.story.replace(
-            STORY_TEMPLATES["placeholders"]["entity"]["state"][1], self.states[1]
-        )
+        for i in range(len(self.states)):
+            self.story = self.story.replace(
+                STORY_TEMPLATES["placeholders"]["entity"]["state"][i], self.states[i]
+            )
 
     def set_story(self):
         self.template = STORY_TEMPLATES["templates"][self.template_idx]
         self.story = self.template["context"]
 
         # true state
-        self.world_state = {
-            self.objects[0]: self.states[0],
-            self.objects[1]: self.states[1],
-        }
-        self.character_belief = [self.world_state.copy(), self.world_state.copy()]
+        self.world_state = {obj: state for obj, state in zip(self.objects, self.states)}
+        self.character_belief = [self.world_state.copy() for _ in range(len(self.characters))]
 
         # set the character beliefs
-        if self.template_idx in [0, 2, 3]:
-            self.character_belief[0][self.objects[1]] = "unknown"
-            self.character_belief[1][self.objects[0]] = "unknown"
+        if self.template_idx not in [1, 5, 7]:
+            # Each character does not have a belief about the other characters' actions
+            for i in range(len(self.characters)):
+                for j in range(len(self.objects)):
+                    if i != j:
+                        self.character_belief[i][self.objects[j]] = "unknown"
         elif self.template_idx == 1:
-            self.character_belief[1][self.objects[0]] = "unknown"
+            # First character can observe the second character's actions
+            for i in range(len(self.characters)):
+                for j in range(len(self.objects)):
+                    if i != 0 and j != 1:
+                        self.character_belief[i][self.objects[j]] = "unknown"
+        elif self.template_idx == 5:
+            # Third character can observe the second character's actions
+            for i in range(len(self.characters)):
+                for j in range(len(self.objects)):
+                    if i != 2 and j != 1:
+                        self.character_belief[i][self.objects[j]] = "unknown"
+        elif self.template_idx == 7:
+            # Third character can observe the first character's actions
+            for i in range(len(self.characters)):
+                for j in range(len(self.objects)):
+                    if i != 2 and j != 0:
+                        self.character_belief[i][self.objects[j]] = "unknown"
 
         # set the common entity names
         self.set_entity_names()
